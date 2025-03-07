@@ -1,0 +1,228 @@
+#!/usr/bin/env python3
+"""
+Robust Web Crawler
+
+This script crawls web pages starting from a given URL. It follows all links on
+the pages, optionally including external links, and saves basic metadata (URL,
+page title, and discovered links) to a file. The script uses a breadth-first
+approach with rate limiting and graceful error handling.
+
+Usage:
+    python robust_crawler.py --start-url "https://example.com" [--external]
+                             [--max-depth 2] [--output-dir crawled_data]
+
+Arguments:
+    --start-url:   The starting URL for the crawler.
+    --external:    Flag to allow crawling of external domains (default is to crawl
+                   only pages on the same domain as the starting URL).
+    --max-depth:   Maximum depth to crawl (default is unlimited).
+    --output-dir:  Directory to store the crawled metadata files.
+"""
+
+import argparse
+import collections
+import os
+import random
+import time
+from urllib.parse import urljoin, urlparse
+
+import requests
+from bs4 import BeautifulSoup
+
+# Set of visited URLs to prevent duplicate processing.
+visited_urls = set()
+
+# List of random User-Agent strings to avoid detection.
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:89.0)",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)"
+]
+
+
+def fetch_page(url):
+    """
+    Fetch the page content from the given URL.
+
+    Uses a randomized User-Agent header and a random delay to avoid detection.
+    Raises HTTP errors if any occur.
+
+    Args:
+        url (str): URL of the page to fetch.
+
+    Returns:
+        str: HTML content of the fetched page.
+    """
+    headers = {"User-Agent": random.choice(USER_AGENTS)}
+    # Sleep a random time between 2 and 5 seconds for rate limiting.
+    time.sleep(random.uniform(2, 5))
+    response = requests.get(url, headers=headers, timeout=10)
+    response.raise_for_status()
+    return response.text
+
+
+def save_metadata(url, title, links, output_dir):
+    """
+    Save the metadata for a crawled page to a file.
+
+    The file is stored under the output_dir directory. Files are named based on
+    the domain of the URL.
+
+    Args:
+        url (str): URL of the page.
+        title (str): Title of the page.
+        links (list): List of discovered links.
+        output_dir (str): Directory to store the metadata files.
+    """
+    # Ensure the output directory exists.
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Create a filename based on the domain.
+    domain = urlparse(url).netloc.replace(".", "_")
+    file_path = os.path.join(output_dir, f"{domain}.txt")
+
+    metadata = {
+        "url": url,
+        "title": title if title else "No Title",
+        "links": links,
+    }
+
+    # Append the metadata to the file.
+    try:
+        with open(file_path, "a", encoding="utf-8") as file:
+            file.write(str(metadata) + "\n")
+    except Exception as error:
+        print(f"[!] Error saving metadata for {url}: {error}")
+
+
+def crawl_website(start_url, allow_external=False, max_depth=None, output_dir="crawled_data"):
+    """
+    Crawl web pages starting from the start_url.
+
+    Uses a breadth-first approach. Depending on the allow_external flag, the
+    crawler can follow links to external domains. Optionally limits crawling to
+    a maximum depth.
+
+    Args:
+        start_url (str): The starting URL for crawling.
+        allow_external (bool): Whether to follow external links.
+        max_depth (int or None): Maximum depth to crawl (None for unlimited).
+        output_dir (str): Directory to store the metadata files.
+    """
+    # Parse the starting domain for same-domain checking.
+    start_domain = urlparse(start_url).netloc
+
+    # Initialize a queue with tuples of (url, depth).
+    url_queue = collections.deque([(start_url, 0)])
+
+    while url_queue:
+        current_url, current_depth = url_queue.popleft()
+
+        if current_url in visited_urls:
+            continue
+
+        print(f"[+] Crawling: {current_url} (Depth: {current_depth})")
+        visited_urls.add(current_url)
+
+        try:
+            # Fetch and parse the page content.
+            page_content = fetch_page(current_url)
+            soup = BeautifulSoup(page_content, "html.parser")
+
+            # Extract page title.
+            page_title = soup.title.string.strip() if soup.title and soup.title.string else "No Title"
+
+            # Extract all anchor tags with href attributes.
+            found_links = []
+            for anchor in soup.find_all("a", href=True):
+                try:
+                    # Create absolute URL.
+                    absolute_url = urljoin(current_url, anchor["href"])
+                    # Clean up URL by removing fragments.
+                    parsed_url = urlparse(absolute_url)
+                    absolute_url = parsed_url._replace(fragment="").geturl()
+                    found_links.append(absolute_url)
+                except Exception as link_error:
+                    print(f"[!] Error processing a link on {current_url}: {link_error}")
+
+            # Save metadata for the current page.
+            save_metadata(current_url, page_title, found_links, output_dir)
+
+            # If a maximum depth is specified, do not process deeper pages.
+            if max_depth is not None and current_depth >= max_depth:
+                continue
+
+            # Enqueue found links.
+            for link in found_links:
+                # Skip already visited URLs.
+                if link in visited_urls:
+                    continue
+
+                # Check if the link is on the same domain.
+                link_domain = urlparse(link).netloc
+                if not allow_external and link_domain != start_domain:
+                    continue
+
+                url_queue.append((link, current_depth + 1))
+
+        except Exception as crawl_error:
+            print(f"[!] Error crawling {current_url}: {crawl_error}")
+
+
+def parse_command_line_arguments():
+    """
+    Parse command-line arguments for the crawler.
+
+    Returns:
+        argparse.Namespace: Parsed command-line arguments.
+    """
+    parser = argparse.ArgumentParser(
+        description="Robust Web Crawler to build and update a directory."
+    )
+    parser.add_argument(
+        "--start-url",
+        type=str,
+        required=True,
+        help="The starting URL for the crawler."
+    )
+    parser.add_argument(
+        "--external",
+        action="store_true",
+        help="Allow crawling of external domains."
+    )
+    parser.add_argument(
+        "--max-depth",
+        type=int,
+        default=None,
+        help="Maximum depth to crawl (default is unlimited)."
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default="crawled_data",
+        help="Directory to store the crawled metadata (default: crawled_data)."
+    )
+    return parser.parse_args()
+
+
+def main():
+    """
+    Main entry point for the crawler script.
+
+    Parses command-line arguments and starts the crawling process.
+    """
+    args = parse_command_line_arguments()
+
+    print("[*] Starting crawl...")
+    crawl_website(
+        start_url=args.start_url,
+        allow_external=args.external,
+        max_depth=args.max_depth,
+        output_dir=args.output_dir
+    )
+    print("[✔] Crawling complete.")
+
+
+if __name__ == "__main__":
+    main()
