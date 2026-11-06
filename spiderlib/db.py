@@ -235,3 +235,13 @@ def get_urls(conn, status=None) -> list:
     query += " ORDER BY id"
     cursor = conn.execute(query, (status,) if status is not None else ())
     return [tuple(row) for row in cursor]
+
+
+def get_recent_logs(conn, limit=10) -> list:
+    """Newest log entries first, as dicts with ts, level and message."""
+    rows = conn.execute("SELECT ts, level, message FROM log ORDER BY id DESC LIMIT ?", (limit,))
+    return [dict(r) for r in rows]
+
+def count_fetched_since(conn, cutoff: str) -> int:
+    """Number of urls rows fetched at or after the ISO timestamp `cutoff`."""
+    return conn.execute("SELECT COUNT(*) FROM urls WHERE fetched_at >= ?", (cutoff,)).fetchone()[0]

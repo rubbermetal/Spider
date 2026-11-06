@@ -1,0 +1,238 @@
+:root {
+    --bg: #020617;
+    --surface: #0f172a;
+    --surface2: #1e293b;
+    --ink: #e2e8f0;
+    --muted: #64748b;
+    --accent: #38bdf8;
+    --border: rgba(148,163,184,0.15);
+    --ok: #4ade80;
+    --warn: #fbbf24;
+    --bad: #f87171;
+}
+
+body {
+    background: var(--bg);
+    color: var(--ink);
+    margin: 0;
+    line-height: 1.5;
+    font-family: system-ui, sans-serif;
+}
+
+a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0.6rem 1.2rem;
+}
+
+.brand {
+    font-weight: bold;
+    color: white;
+    margin-right: 1.5rem;
+}
+
+.topbar nav {
+    display: flex;
+    gap: 1rem;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 1.5rem auto;
+    padding: 0 1rem;
+}
+
+h1, h2 {
+    color: white;
+}
+
+.tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.8rem;
+    margin: 1rem 0;
+}
+
+.tile {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.8rem 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.tile .label {
+    color: var(--muted);
+    font-size: small;
+    text-transform: uppercase;
+}
+
+.tile strong {
+    font-size: 1.6rem;
+    color: white;
+}
+
+.status {
+    color: var(--muted);
+}
+
+.state.running {
+    color: var(--ok);
+}
+
+.state.paused {
+    color: var(--warn);
+}
+
+.state.stopped {
+    color: var(--muted);
+}
+
+.ok {
+    color: var(--ok);
+}
+
+.warn {
+    color: var(--warn);
+    font-weight: bold;
+}
+
+.bad {
+    color: var(--bad);
+}
+
+.muted {
+    color: var(--muted);
+}
+
+.controls {
+    display: flex;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+button, .btn {
+    background: var(--surface2);
+    color: var(--ink);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.4rem 0.9rem;
+    cursor: pointer;
+}
+
+button:hover {
+    border-color: var(--accent);
+}
+
+button.link {
+    background: none;
+    border: none;
+    color: var(--accent);
+    padding: 0;
+}
+
+form.inline {
+    display: inline;
+}
+
+.grid {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.grid th {
+    text-align: left;
+    color: var(--muted);
+    font-size: small;
+    text-transform: uppercase;
+}
+
+.grid th, .grid td {
+    padding: 0.45rem 0.6rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+}
+
+.lvl.error {
+    color: var(--bad);
+}
+
+.lvl.warn {
+    color: var(--warn);
+}
+
+.lvl.info {
+    color: var(--muted);
+}
+
+input, select, textarea {
+    background: var(--surface2);
+    color: var(--ink);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+}
+
+.msg {
+    padding: 0.6rem 0.9rem;
+    border-radius: 6px;
+    margin: 1rem 0;
+    background: var(--surface2);
+}
+
+.msg.bad {
+    border-left: 3px solid var(--bad);
+}
+
+.msg.ok {
+    border-left: 3px solid var(--ok);
+}
+
+body.login {
+    display: flex;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    width: min(360px, 90vw);
+}
+
+.login-box label {
+    display: block;
+    margin: 1rem 0 0.3rem;
+}
+
+.login-box input, .login-box button {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.login-box button {
+    margin-top: 1rem;
+}
+
+@media (max-width: 600px) {
+    .topbar {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+}

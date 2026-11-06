@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+<section class="tiles">
+    <div class="tile"><span class="label">Queued</span><strong data-stat="queued">{{ s.queued }}</strong></div>
+    <div class="tile"><span class="label">Fetching</span><strong data-stat="fetching">{{ s.fetching }}</strong></div>
+    <div class="tile"><span class="label">Done</span><strong data-stat="done">{{ s.done }}</strong></div>
+    <div class="tile"><span class="label">Errors</span><strong data-stat="errors">{{ s.errors }}</strong></div>
+    <div class="tile"><span class="label">Total URLs</span><strong data-stat="total_urls">{{ s.total_urls }}</strong></div>
+    <div class="tile"><span class="label">Domains</span><strong data-stat="domains">{{ s.domains }}</strong></div>
+    <div class="tile"><span class="label">Pages per min</span><strong data-stat="pages_per_min">{{ s.pages_per_min }}</strong></div>
+    <div class="tile"><span class="label">Errors last hour</span><strong data-stat="errors_last_hour">{{ s.errors_last_hour }}</strong></div>
+</section>
+<p class="status">State: <strong data-stat="crawl_state" class="state {{ s.crawl_state }}">{{ s.crawl_state }}</strong> &middot; Crawler thread: <strong data-stat="running">{{ 'running' if s.running else 'not running' }}</strong> &middot; <span data-stat="robots" class="{{ 'ok' if s.respect_robots else 'warn' }}">robots.txt: {{ 'respected' if s.respect_robots else 'IGNORED' }}</span></p>
+<section class="controls">
+    <form method="post" action="{{ url_for('dashboard.control', action='start') }}" class="inline"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button type="submit">Start</button></form>
+    <form method="post" action="{{ url_for('dashboard.control', action='pause') }}" class="inline"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button type="submit">Pause</button></form>
+    <form method="post" action="{{ url_for('dashboard.control', action='resume') }}" class="inline"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button type="submit">Resume</button></form>
+    <form method="post" action="{{ url_for('dashboard.control', action='stop') }}" class="inline"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button type="submit">Stop</button></form>
+</section>
+<h2>Recent activity</h2>
+{% if recent %}
+<table class="grid">
+    <thead>
+        <tr><th>Time</th><th>Level</th><th>Message</th></tr>
+    </thead>
+    <tbody>
+        {% for r in recent %}
+        <tr><td>{{ r.ts }}</td><td class="lvl {{ r.level }}">{{ r.level }}</td><td>{{ r.message }}</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="muted">Nothing logged yet.</p>
+{% endif %}
+{% endblock %}

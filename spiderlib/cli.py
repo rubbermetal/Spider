@@ -51,6 +51,7 @@ import sys
 from spiderlib import db, queue, crawler
 from spiderlib.crawler import Crawler
 from spiderlib.urls import host_of
+from spiderlib import serve
 
 def build_parser():
     parser = argparse.ArgumentParser(description="Spider command-line interface.")
@@ -109,6 +110,8 @@ def build_parser():
     export_parser.add_argument('--format', choices=['csv', 'json'], default='csv', help='Export format')
     export_parser.add_argument('--status', help='Filter by status')
     export_parser.add_argument('--out', help='Output file')
+
+    serve.add_arguments(subparsers)
 
     return parser
 
@@ -289,6 +292,8 @@ def main(argv=None):
             return cmd_retry_errors(conn, args)
         elif args.command == 'export':
             return cmd_export(conn, args)
+        elif args.command == 'serve':
+            return serve.cmd_serve(conn, args)
     finally:
         conn.close()
 
