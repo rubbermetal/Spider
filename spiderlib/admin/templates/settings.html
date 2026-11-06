@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<h1>Settings</h1>
+{% if not values.respect_robots %}
+<p class="msg bad">robots.txt is being IGNORED. Pages that sites ask crawlers to avoid will be fetched.</p>
+{% endif %}
+<p class="muted">Crawl state: <strong>{{ state }}</strong> (change it from the dashboard). Changes apply to a running crawl within a few seconds.</p>
+<form method="post" action="{{ url_for('settings.edit') }}" class="settings">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    {% for title, fields in groups %}
+    <fieldset>
+        <legend>{{ title }}</legend>
+        {% for f in fields %}
+        <div class="field">
+            {% if f.kind == "bool" %}
+            <label><input type="checkbox" name="{{ f.key }}" value="1" {% if values[f.key] %}checked{% endif %}> {{ f.label }}</label>
+            {% elif f.kind == "int" %}
+            <label for="{{ f.key }}">{{ f.label }}</label><input type="number" id="{{ f.key }}" name="{{ f.key }}" value="{{ values[f.key] }}" min="{{ f.min }}" max="{{ f.max }}" step="1">
+            {% elif f.kind == "float" %}
+            <label for="{{ f.key }}">{{ f.label }}</label><input type="number" id="{{ f.key }}" name="{{ f.key }}" value="{{ values[f.key] }}" min="{{ f.min }}" max="{{ f.max }}" step="any">
+            {% elif f.kind == "str" %}
+            <label for="{{ f.key }}">{{ f.label }}</label><input type="text" id="{{ f.key }}" name="{{ f.key }}" value="{{ values[f.key] }}" maxlength="{{ f.max }}">
+            {% endif %}
+            <small class="muted">{{ f.help }}</small>
+            {% if errors.get(f.key) %}
+            <small class="bad">{{ errors[f.key] }}</small>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </fieldset>
+    {% endfor %}
+    <button type="submit">Save settings</button>
+</form>
+{% endblock %}
