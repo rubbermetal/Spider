@@ -54,7 +54,8 @@ def _parse_ts(ts: str) -> datetime.datetime:
 
 def get_robots(conn, url: str, settings: dict, fetcher=fetch_robots_txt) -> urllib.robotparser.RobotFileParser:
     host = host_of(url)
-    scheme = urllib.parse.urlsplit(url).scheme
+    parts = urllib.parse.urlsplit(url)
+    scheme, netloc = parts.scheme, parts.netloc.rpartition("@")[2]
     cursor = conn.execute("INSERT OR IGNORE INTO domains (host) VALUES (?)", (host,))
     cursor.execute("SELECT robots_txt, robots_status, robots_fetched_at FROM domains WHERE host = ?", (host,))
     row = cursor.fetchone()
@@ -65,7 +66,7 @@ def get_robots(conn, url: str, settings: dict, fetcher=fetch_robots_txt) -> urll
             limit = RETRY_HOURS if (robots_status is None or robots_status >= 500) else FRESH_HOURS
             if (datetime.datetime.now(datetime.timezone.utc) - fetched_at).total_seconds() / 3600 < limit:
                 return parse_robots(robots_status, robots_txt or "")
-    status, text = fetcher(f"{scheme}://{host}/robots.txt", settings["user_agent"], settings["timeout"])
+    status, text = fetcher(f"{scheme}://{netloc}/robots.txt", settings["user_agent"], settings["timeout"])
     conn.execute("UPDATE domains SET robots_txt = ?, robots_status = ?, robots_fetched_at = ? WHERE host = ?", (text, status, db.now(), host))
     conn.commit()
     return parse_robots(status, text or "")

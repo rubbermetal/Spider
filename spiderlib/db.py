@@ -150,3 +150,88 @@ def stats(conn) -> dict:
         "domains": domains,
         "errors_last_hour": errors_last_hour
     }
+
+def get_seed_url(conn, seed_id) -> str | None:
+    """Get the `url` of the seeds row with the given id, or None."""
+    cursor = conn.execute("SELECT url FROM seeds WHERE id = ?", (seed_id,))
+    row = cursor.fetchone()
+    return row['url'] if row else None
+
+def get_seeds(conn) -> list:
+    """Get a list of seeds with their statistics."""
+    query = """
+    SELECT
+        seeds.id,
+        seeds.url,
+        seeds.enabled,
+        seeds.max_depth,
+        seeds.max_pages,
+        seeds.allow_external,
+        (SELECT COUNT(*) FROM urls WHERE urls.seed_id = seeds.id) as total_urls,
+        (SELECT COUNT(*) FROM urls WHERE urls.seed_id = seeds.id AND urls.status = 'done') as done_urls
+    FROM seeds
+    ORDER BY seeds.id
+    """
+    cursor = conn.execute(query)
+    return [tuple(row) for row in cursor]
+
+def get_setting(conn, key):
+    """Get the typed value from get_settings for the given key, or None if key is not in DEFAULT_SETTINGS."""
+    settings = get_settings(conn)
+    return settings.get(key)
+
+def convert_setting_value(key, text: str):
+    """Convert the text to the Python type of DEFAULT_SETTINGS[key]. Raise KeyError for an unknown key."""
+    if key not in DEFAULT_SETTINGS:
+        raise KeyError(key)
+    default_type = type(DEFAULT_SETTINGS[key])
+    if default_type is bool:
+        if text.strip().lower() in ("1", "true", "yes"):
+            return True
+        elif text.strip().lower() in ("0", "false", "no"):
+            return False
+        else:
+            raise ValueError(f"Invalid boolean value: {text}")
+    elif default_type is int:
+        return int(text)
+    elif default_type is float:
+        return float(text)
+    else:
+        return text
+
+def get_stats(conn) -> dict:
+    """Get stats including crawl_state and respect_robots."""
+    stats_dict = stats(conn)
+    settings = get_settings(conn)
+    stats_dict["crawl_state"] = settings.get("crawl_state")
+    stats_dict["respect_robots"] = settings.get("respect_robots", False)
+    return stats_dict
+
+def block_domain(conn, host):
+    """Block a domain by setting its blocked status to 1."""
+    conn.execute("INSERT INTO domains (host, blocked) VALUES (?, 1) ON CONFLICT(host) DO UPDATE SET blocked = 1", (host,))
+    conn.commit()
+
+def unblock_domain(conn, host):
+    """Unblock a domain by setting its blocked status to 0."""
+    conn.execute("UPDATE domains SET blocked = 0 WHERE host = ?", (host,))
+    conn.commit()
+
+def retry_errors(conn) -> int:
+    """Retry errors by setting their status to 'queued' and resetting attempts."""
+    cursor = conn.execute("""
+    UPDATE urls
+    SET status = 'queued', attempts = 0, next_attempt_at = NULL, error = NULL
+    WHERE status = 'error'
+    """)
+    conn.commit()
+    return cursor.rowcount
+
+def get_urls(conn, status=None) -> list:
+    """Get URLs with optional status filter."""
+    query = "SELECT url, host, status, http_status, title, description, content_type, depth, fetched_at FROM urls"
+    if status is not None:
+        query += " WHERE status = ?"
+    query += " ORDER BY id"
+    cursor = conn.execute(query, (status,) if status is not None else ())
+    return [tuple(row) for row in cursor]

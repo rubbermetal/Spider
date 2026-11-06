@@ -104,3 +104,10 @@ def test_crawl_delay_ignores_robots_when_switch_off(conn):
 
 def test_fetch_robots_txt_never_raises():
     assert robots.fetch_robots_txt("http://127.0.0.1:1/robots.txt", "x", 1) == (None, "")
+
+
+def test_robots_url_keeps_non_default_port(conn):
+    f = make_fetcher(200, "User-agent: *\nDisallow: /private/")
+    assert robots.allowed(conn, "http://a.com:8080/page", S, f)
+    assert not robots.allowed(conn, "http://a.com:8080/private/x", S, f)
+    assert f.calls == ["http://a.com:8080/robots.txt"]

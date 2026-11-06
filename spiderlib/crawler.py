@@ -58,9 +58,11 @@ def process_one(conn, row, settings, throttle, fetcher=fetch.fetch, robots_fetch
         html = parse.decode_body(result["body"], result["content_type"])
         parsed = parse.parse_html(html, result["final_url"])
         digest = parse.content_hash(html)
-        queue.record_result(conn, row["id"], result, parsed, digest)
+        # Queue the links BEFORE marking this row done: while it is still
+        # 'fetching' an idle worker cannot see an empty queue and stop early.
         if not parsed["nofollow"]:
             queue.add_links(conn, row["id"], parsed["links"], row["seed_id"], row["depth"], settings)
+        queue.record_result(conn, row["id"], result, parsed, digest)
         return "done"
     except Exception as exc:
         db.log_event(conn, "error", f"{row['url']}: {exc}")
