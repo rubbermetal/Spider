@@ -17,7 +17,7 @@ def create_app(db_path, password=None, secret_key=None, trust_proxy=False, runne
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
-    from spiderlib.admin import auth, dashboard, dbconn, settings
+    from spiderlib.admin import auth, dashboard, dbconn, seeds, settings
     from spiderlib.admin.runner import Runner
 
     app.extensions["spider_runner"] = runner if runner is not None else Runner()
@@ -26,6 +26,7 @@ def create_app(db_path, password=None, secret_key=None, trust_proxy=False, runne
     app.context_processor(lambda: {"csrf_token": auth.csrf_token})
     app.register_blueprint(auth.bp)
     app.register_blueprint(dashboard.bp)
+    app.register_blueprint(seeds.bp)
     app.register_blueprint(settings.bp)
 
     return app

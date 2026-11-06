@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Edit seed{% endblock %}
+{% block content %}
+<h1>Edit seed</h1>
+<p class="muted">{{ seed.url }}</p>
+<form method="post" action="{{ url_for('seeds.edit', seed_id=seed.id) }}" class="settings">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    {% set cur = form if form else {} %}
+    <div class="field">
+        Max depth (number, name max_depth, min 0, max 50): <input type="number" name="max_depth" value="{{ cur.get('max_depth') if form else (seed.max_depth if seed.max_depth is not none else '') }}" min="0" max="50">
+        <p class="muted">blank = use the global setting</p>
+        {% if errors.get('max_depth') %}<small class="bad">{{ errors['max_depth'] }}</small>{% endif %}
+    </div>
+    <div class="field">
+        Max pages (number, name max_pages, min 1): <input type="number" name="max_pages" value="{{ cur.get('max_pages') if form else (seed.max_pages if seed.max_pages is not none else '') }}" min="1">
+        <p class="muted">blank = use the global setting</p>
+        {% if errors.get('max_pages') %}<small class="bad">{{ errors['max_pages'] }}</small>{% endif %}
+    </div>
+    <div class="field">
+        Recrawl every (hours) (number, name recrawl_hours, min 1): <input type="number" name="recrawl_hours" value="{{ cur.get('recrawl_hours') if form else (seed.recrawl_hours if seed.recrawl_hours is not none else '') }}" min="1">
+        <p class="muted">blank = use the global setting</p>
+        {% if errors.get('recrawl_hours') %}<small class="bad">{{ errors['recrawl_hours'] }}</small>{% endif %}
+    </div>
+    <div class="field">
+        Follow external links: 
+        <select name="allow_external">
+            <option value="" {% if cur.get('allow_external') is none %}selected{% endif %}>Default</option>
+            <option value="yes" {% if cur.get('allow_external') == 'yes' %}selected{% endif %}>Yes</option>
+            <option value="no" {% if cur.get('allow_external') == 'no' %}selected{% endif %}>No</option>
+        </select>
+        <p class="muted">blank = use the global setting</p>
+        {% if errors.get('allow_external') %}<small class="bad">{{ errors['allow_external'] }}</small>{% endif %}
+    </div>
+    <button type="submit">Save</button>
+    <a class="btn" href="{{ url_for('seeds.index') }}">Cancel</a>
+</form>
+{% endblock %}

@@ -158,3 +158,15 @@ def test_log_has_start_and_stop(dbpath):
     log_messages = get_log_messages(conn)
     assert "crawl started" in log_messages
     assert "crawl stopped" in log_messages
+
+
+def test_disabled_seed_is_not_crawled_and_run_exits(dbpath):
+    global FETCHED
+    FETCHED = []
+    conn = make(dbpath)
+    sid = queue.add_seed(conn, "http://a.com/", max_depth=5)
+    conn.execute("UPDATE seeds SET enabled = 0 WHERE id = ?", (sid,))
+    conn.commit()
+    crawler.Crawler(dbpath, fake_fetch, robots_none, idle_sleep=0.01).run()
+    assert FETCHED == []
+    assert urls_by_status(conn)["http://a.com/"] == "queued"

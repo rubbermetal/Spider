@@ -129,7 +129,7 @@ class Crawler:
                         continue
                     row = queue.claim_next(conn)
                     if row is None:
-                        count = conn.execute("SELECT COUNT(*) FROM urls WHERE status IN ('queued','fetching')").fetchone()[0]
+                        count = conn.execute("SELECT COUNT(*) FROM urls WHERE status IN ('queued','fetching') AND (seed_id IS NULL OR seed_id NOT IN (SELECT id FROM seeds WHERE enabled = 0))").fetchone()[0]
                         if count == 0 and self.exit_when_idle:
                             db.set_setting(conn, "crawl_state", "stopped")
                             break

@@ -97,6 +97,7 @@ def claim_next(conn) -> sqlite3.Row | None:
         WHERE id = (
             SELECT id FROM urls
             WHERE status = 'queued' AND (next_attempt_at IS NULL OR next_attempt_at <= ?)
+              AND (seed_id IS NULL OR seed_id NOT IN (SELECT id FROM seeds WHERE enabled = 0))
             ORDER BY priority DESC, id ASC
             LIMIT 1
         )

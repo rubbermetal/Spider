@@ -171,3 +171,15 @@ def test_recover_stale(conn):
     for url in ["http://a.com/", "http://b.com/"]:
         row_data = row(conn, url)
         assert row_data["status"] == "queued"
+
+
+def test_disabled_seed_urls_not_claimed(conn):
+    sid = queue.add_seed(conn, "http://a.com/")
+    conn.execute("UPDATE seeds SET enabled = 0 WHERE id = ?", (sid,))
+    conn.commit()
+    assert queue.claim_next(conn) is None
+    queue.enqueue(conn, "http://other.com/x")  # no seed: always claimable
+    assert queue.claim_next(conn)["url"] == "http://other.com/x"
+    conn.execute("UPDATE seeds SET enabled = 1 WHERE id = ?", (sid,))
+    conn.commit()
+    assert queue.claim_next(conn)["url"] == "http://a.com/"
