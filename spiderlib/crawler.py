@@ -65,7 +65,11 @@ def process_one(conn, row, settings, throttle, fetcher=fetch.fetch, robots_fetch
         queue.record_result(conn, row["id"], result, parsed, digest)
         return "done"
     except Exception as exc:
-        db.log_event(conn, "error", f"{row['url']}: {exc}")
+        conn.rollback()                          # drop any half-finished write so the lock is released
+        try:
+            db.log_event(conn, "error", f"{row['url']}: {exc}")
+        except Exception:
+            pass                                 # logging is best effort; still record the failure below
         return queue.record_failure(conn, row["id"], {"status": None, "error": str(exc), "error_kind": "other", "elapsed_ms": 0}, settings)
 
 def pause(conn):
@@ -152,7 +156,11 @@ class Crawler:
                             continue
                     process_one(conn, row, settings, self.throttle, self.fetcher, self.robots_fetcher)
                 except Exception as exc:
-                    db.log_event(conn, "error", f"worker error: {exc}")
+                    try:
+                        conn.rollback()
+                        db.log_event(conn, "error", f"worker error: {exc}")
+                    except Exception:
+                        pass                     # never let the error handler kill the worker
                     time.sleep(self.idle_sleep)
         finally:
             conn.close()

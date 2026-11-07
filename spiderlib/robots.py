@@ -56,10 +56,14 @@ def get_robots(conn, url: str, settings: dict, fetcher=fetch_robots_txt) -> urll
     host = host_of(url)
     parts = urllib.parse.urlsplit(url)
     scheme, netloc = parts.scheme, parts.netloc.rpartition("@")[2]
-    cursor = conn.execute("INSERT OR IGNORE INTO domains (host) VALUES (?)", (host,))
-    cursor.execute("SELECT robots_txt, robots_status, robots_fetched_at FROM domains WHERE host = ?", (host,))
-    row = cursor.fetchone()
-    if row:
+    # Read first; only write (and commit at once) for a host we have not seen. An
+    # INSERT here left a write transaction open on the cached path, so the worker
+    # held the SQLite write lock through the per-host delay and the network fetch.
+    row = conn.execute("SELECT robots_txt, robots_status, robots_fetched_at FROM domains WHERE host = ?", (host,)).fetchone()
+    if row is None:
+        conn.execute("INSERT OR IGNORE INTO domains (host) VALUES (?)", (host,))
+        conn.commit()
+    else:
         robots_txt, robots_status, robots_fetched_at = row
         if robots_fetched_at is not None:
             fetched_at = _parse_ts(robots_fetched_at)
