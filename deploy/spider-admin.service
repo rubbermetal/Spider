@@ -1,0 +1,31 @@
+# systemd unit for the Spider web admin (and the crawler it starts).
+# Run exactly ONE worker process: the crawler runs as a thread inside it.
+#
+# Install:  cp deploy/spider-admin.service /etc/systemd/system/
+#           systemctl daemon-reload && systemctl enable --now spider-admin
+#
+# /opt/spider/.env holds (root-owned, mode 600 or owned by the service user):
+#   SPIDER_ADMIN_PASSWORD=<long password>
+#   SPIDER_SECRET=<long random string>
+
+[Unit]
+Description=Spider web admin and crawler
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=spider
+Group=spider
+WorkingDirectory=/opt/spider
+EnvironmentFile=/opt/spider/.env
+ExecStart=/opt/spider/venv/bin/gunicorn --workers 1 --threads 8 --bind 127.0.0.1:8090 \
+    "spiderlib.admin:create_app('/opt/spider/data/spider.db', trust_proxy=True)"
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt/spider/data
+
+[Install]
+WantedBy=multi-user.target

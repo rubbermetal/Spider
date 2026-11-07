@@ -1,5 +1,7 @@
 # Spider admin: plan
 
+Status (2026-11-07): stages A to I are done; see README.md for usage.
+
 Web admin for the crawler, Flask, password-protected, served by `spider serve`.
 All state lives in the SQLite database, so the admin and the CLI (`spider run`)
 can be used together. No CDN assets: CSS and JS are local files.

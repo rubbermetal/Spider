@@ -1,0 +1,8 @@
+# Caddy site for the Spider admin. Replace the host name.
+# header_up REPLACES any X-Real-IP the client sent, which is what the login
+# lockout relies on (the app runs with trust_proxy=True behind this proxy).
+spider.example.com {
+    reverse_proxy 127.0.0.1:8090 {
+        header_up X-Real-IP {remote_host}
+    }
+}
