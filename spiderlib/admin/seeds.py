@@ -1,3 +1,5 @@
+"""Seeds admin page: list, add, edit limits, enable/disable, recrawl, delete."""
+
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from spiderlib.admin import seeds_ops
 from spiderlib.admin.dbconn import get_conn

@@ -1,3 +1,10 @@
+"""Sort failed URLs into kinds (timeout, dns, http-404, ...) for the errors page.
+
+Usage:
+    classify("error", 404, "HTTP 404") -> "http-404"
+    label("timeout") -> "Timeouts"
+"""
+
 import re
 
 FIXED_KINDS = (

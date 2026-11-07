@@ -1,3 +1,5 @@
+"""Settings admin page: typed form for the crawler settings."""
+
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from spiderlib import db
 from spiderlib.admin import settings_schema

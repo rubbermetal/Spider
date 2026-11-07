@@ -1,3 +1,5 @@
+"""Read-only queries for the errors page: groups, group listing, top hosts."""
+
 from spiderlib.admin import errors_logic, urls_filter
 
 PROBLEM_STATUSES = ("error", "blocked", "skipped")

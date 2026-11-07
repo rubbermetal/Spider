@@ -1,3 +1,10 @@
+"""Extract page metadata from HTML: title, description, canonical URL, robots meta, links, text.
+
+Usage:
+    parsed = parse_html(html, "http://example.com/page")
+    parsed["title"], parsed["links"]
+"""
+
 import re
 import hashlib
 from html.parser import HTMLParser
