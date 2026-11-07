@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Domains{% endblock %}
+{% block content %}
+    <h1>Domains</h1>
+    <p class="muted">{{ pg.total }} domain(s){% if pg.total %}, showing {{ pg.first }}-{{ pg.last }}{% endif %}. Blocking a.com also blocks its subdomains.</p>
+
+    <form method="get" action="{{ url_for('domains.index') }}" class="filters">
+        <input type="text" name="q" value="{{ f.q }}" placeholder="search host">
+        <select name="blocked">
+            <option value="" {% if f.blocked == "" %}selected{% endif %}>Blocked: any</option>
+            <option value="yes" {% if f.blocked == "yes" %}selected{% endif %}>Blocked</option>
+            <option value="no" {% if f.blocked == "no" %}selected{% endif %}>Not blocked</option>
+        </select>
+        <select name="sort">
+            {% for sort in sorts %}
+                <option value="{{ sort }}" {% if f.sort == sort %}selected{% endif %}>{{ sort }}</option>
+            {% endfor %}
+        </select>
+        <select name="order">
+            <option value="desc" {% if f.order == "desc" %}selected{% endif %}>Highest first</option>
+            <option value="asc" {% if f.order == "asc" %}selected{% endif %}>Lowest first</option>
+        </select>
+        <select name="per_page">
+            {% for choice in per_page_choices %}
+                <option value="{{ choice }}" {% if f.per_page == choice %}selected{% endif %}>{{ choice }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Apply</button>
+        <a class="btn" href="{{ url_for('domains.index') }}">Reset</a>
+    </form>
+
+    <form method="post" action="{{ url_for('domains.block_new') }}" class="filters">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <input type="text" name="host" placeholder="host to block, e.g. spam.example" required>
+        <button type="submit">Block host</button>
+    </form>
+
+    {% if not rows %}
+        <p class="muted">No domains yet.</p>
+    {% else %}
+        <table class="grid">
+            <thead>
+                <tr>
+                    <th>Host</th>
+                    <th>Status</th>
+                    <th>Delay (s)</th>
+                    <th>Queued</th>
+                    <th>Done</th>
+                    <th>Errors</th>
+                    <th>Total</th>
+                    <th>robots.txt</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rows %}
+                    <tr>
+                        <td><a href="{{ url_for('domains.detail', host=r.host) }}">{{ r.host }}</a></td>
+                        <td>{% if r.blocked %}<span class="warn">blocked</span>{% else %}<span class="ok">ok</span>{% endif %}</td>
+                        <td>{{ r.delay_override if r.delay_override is not none else "-" }}</td>
+                        <td>{{ r.queued }}</td>
+                        <td>{{ r.done }}</td>
+                        <td class="{% if r.errors > 0 %}bad{% endif %}">{{ r.errors }}</td>
+                        <td>{{ r.total }}</td>
+                        <td>{{ r.robots_status if r.robots_status is not none else "-" }}</td>
+                        <td>
+                            <form method="post" action="{% if r.blocked %}{{ url_for('domains.unblock', host=r.host) }}{% else %}{{ url_for('domains.block', host=r.host) }}{% endif %}" class="inline">
+                                <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+                                <button type="submit">{% if r.blocked %}Unblock{% else %}Block{% endif %}</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
+    <nav class="pager">
+        {% if pg.has_prev %}
+            <a href="{{ url_for('domains.index', **dict(qs, page=pg.page - 1)) }}">Prev</a>
+        {% endif %}
+        <span>Page {{ pg.page }} of {{ pg.pages }}</span>
+        {% if pg.has_next %}
+            <a href="{{ url_for('domains.index', **dict(qs, page=pg.page + 1)) }}">Next</a>
+        {% endif %}
+    </nav>
+{% endblock %}

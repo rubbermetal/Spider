@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ d.host }}{% endblock %}
+{% block content %}
+    <p><a href="{{ url_for('domains.index') }}">&larr; All domains</a></p>
+    <h1>{{ d.host }}</h1>
+    <p>Status: {% if d.blocked %}<strong class="warn">blocked</strong>{% else %}<strong class="ok">ok</strong>{% endif %} &middot; URLs: {{ d.total }} (queued {{ d.queued }}, done {{ d.done }}, errors {{ d.errors }}) <a href="{{ url_for('urls.index', host=d.host) }}">browse</a></p>
+
+    <form method="post" action="{% if d.blocked %}{{ url_for('domains.unblock', host=d.host) }}{% else %}{{ url_for('domains.block', host=d.host) }}{% endif %}">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <button type="submit">{% if d.blocked %}Unblock{% else %}Block this domain{% endif %}</button>
+    </form>
+    <small class="muted">Blocking a domain also blocks its subdomains.</small>
+
+    <h2>Delay</h2>
+    <form method="post" action="{{ url_for('domains.delay', host=d.host) }}">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <input type="text" name="delay" value="{{ d.delay_override if d.delay_override is not none else '' }}" placeholder="blank = use global ({{ settings.default_delay }})" size="12">
+        <button type="submit">Save delay</button>
+    </form>
+
+    <h2>Notes</h2>
+    <form method="post" action="{{ url_for('domains.notes', host=d.host) }}">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <textarea name="notes" rows="3" cols="60">{{ d.notes }}</textarea>
+        <button type="submit">Save notes</button>
+    </form>
+
+    <h2>robots.txt</h2>
+    <p class="muted">Status: {{ d.robots_status if d.robots_status is not none else 'not fetched' }}{% if d.robots_fetched_at %}, fetched {{ d.robots_fetched_at }}{% endif %}{% if not settings.respect_robots %} &middot; <span class="warn">currently ignored (setting)</span>{% endif %}</p>
+    {% if d.robots_txt %}
+        <pre class="robots">{{ d.robots_txt }}</pre>
+    {% endif %}
+    <form method="post" action="{{ url_for('domains.robots_refetch', host=d.host) }}">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <button type="submit">Refetch robots.txt</button>
+    </form>
+
+    <h2>Recent URLs</h2>
+    {% if not recent %}
+        <p class="muted">None.</p>
+    {% else %}
+        <table class="grid">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>URL</th>
+                    <th>Status</th>
+                    <th>HTTP</th>
+                    <th>Title</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in recent %}
+                    <tr>
+                        <td><a href="{{ url_for('urls.detail', url_id=r.id) }}">{{ r.id }}</a></td>
+                        <td>{{ r.url|truncate(70, true) }}</td>
+                        <td class="st {{ r.status }}">{{ r.status }}</td>
+                        <td>{{ r.http_status or '' }}</td>
+                        <td>{{ (r.title or '')|truncate(40, true) }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+{% endblock %}

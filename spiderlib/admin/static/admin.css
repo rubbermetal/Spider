@@ -255,3 +255,6 @@ form.filters input[type=text] { width: 11rem; }
 .pager { display: flex; gap: 1rem; align-items: center; margin: 1rem 0; color: var(--muted); }
 
 .bulk-bar select { min-width: 9rem; }
+
+pre.robots { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem 1rem; overflow-x: auto; max-height: 20rem; }
+textarea { width: 100%; max-width: 520px; box-sizing: border-box; }
