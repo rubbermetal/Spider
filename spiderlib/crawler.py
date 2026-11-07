@@ -9,7 +9,7 @@ Usage example:
 
 import time
 import threading
-from spiderlib import db, fetch, robots, parse, queue
+from spiderlib import db, fetch, robots, parse, queue, schedule
 from spiderlib.urls import host_of, normalize_url, is_same_site, registered_domain
 
 def _domain_blocked(conn, host):
@@ -88,6 +88,8 @@ class Crawler:
         self.idle_sleep = idle_sleep
         self.throttle = fetch.HostThrottle()
         self.exit_when_idle = True
+        self.schedule_interval = 30.0
+        self._last_schedule = 0.0
 
     def run(self, exit_when_idle=True):
         """Run the crawler."""
@@ -114,6 +116,16 @@ class Crawler:
             db.log_event(conn, "info", "crawl stopped")
             conn.close()
 
+    def _maybe_schedule(self, conn):
+        """Requeue seeds that are due for a recrawl (at most once per schedule_interval)."""
+        now = time.monotonic()
+        if now - self._last_schedule < self.schedule_interval:
+            return
+        self._last_schedule = now
+        results = schedule.requeue_due(conn)
+        if results:
+            db.log_event(conn, "info", "scheduled recrawl: " + ", ".join(f"seed {sid} ({n} URLs)" for sid, n in results))
+
     def _worker(self):
         """Worker function for the crawler."""
         conn = db.connect(self.db_path)
@@ -129,6 +141,8 @@ class Crawler:
                         continue
                     row = queue.claim_next(conn)
                     if row is None:
+                        if not self.exit_when_idle:
+                            self._maybe_schedule(conn)
                         count = conn.execute("SELECT COUNT(*) FROM urls WHERE status IN ('queued','fetching') AND (seed_id IS NULL OR seed_id NOT IN (SELECT id FROM seeds WHERE enabled = 0))").fetchone()[0]
                         if count == 0 and self.exit_when_idle:
                             db.set_setting(conn, "crawl_state", "stopped")

@@ -141,3 +141,21 @@ def test_control_requires_post(logged_in, client):
 def test_control_requires_login(admin_client):
     response = admin_client.post("/control/stop", data={"csrf": "x"})
     assert response.status_code == 400
+
+
+def test_control_start_keep_running_passes_flag(logged_in, page_csrf, admin_app, admin_db):
+    r = logged_in.post("/control/start", data={"csrf": page_csrf(), "forever": "yes"})
+    assert r.status_code == 302
+    runner = admin_app.extensions["spider_runner"]
+    assert runner.calls == [(admin_db, False)]
+    rows = [dict(x) for x in conn_of(admin_db).execute("SELECT * FROM audit ORDER BY id")]
+    assert rows[-1]["detail"] == "started (keep running)"
+
+
+def test_control_start_default_is_one_shot(logged_in, page_csrf, admin_app, admin_db):
+    logged_in.post("/control/start", data={"csrf": page_csrf()})
+    assert admin_app.extensions["spider_runner"].calls == [(admin_db, True)]
+
+
+def test_dashboard_start_form_has_keep_running_checkbox(logged_in):
+    assert 'name="forever"' in logged_in.get("/").get_data(as_text=True)

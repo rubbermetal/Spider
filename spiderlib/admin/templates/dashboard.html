@@ -14,7 +14,7 @@
 </section>
 <p class="status">State: <strong data-stat="crawl_state" class="state {{ s.crawl_state }}">{{ s.crawl_state }}</strong> &middot; Crawler thread: <strong data-stat="running">{{ 'running' if s.running else 'not running' }}</strong> &middot; <span data-stat="robots" class="{{ 'ok' if s.respect_robots else 'warn' }}">robots.txt: {{ 'respected' if s.respect_robots else 'IGNORED' }}</span></p>
 <section class="controls">
-    <form method="post" action="{{ url_for('dashboard.control', action='start') }}" class="inline"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button type="submit">Start</button></form>
+    <form method="post" action="{{ url_for('dashboard.control', action='start') }}" class="inline"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><label class="muted"><input type="checkbox" name="forever" value="yes"> keep running (recrawl on schedule)</label> <button type="submit">Start</button></form>
     <form method="post" action="{{ url_for('dashboard.control', action='pause') }}" class="inline"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button type="submit">Pause</button></form>
     <form method="post" action="{{ url_for('dashboard.control', action='resume') }}" class="inline"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button type="submit">Resume</button></form>
     <form method="post" action="{{ url_for('dashboard.control', action='stop') }}" class="inline"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button type="submit">Stop</button></form>

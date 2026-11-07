@@ -139,3 +139,17 @@ def test_delete_seed(conn):
     audit_rows = audit(conn)
     assert any(row["action"] == "seed_delete" for row in audit_rows)
     assert ops.delete_seed(conn, 999) is None
+
+
+def test_list_seeds_has_next_recrawl_and_recrawl_resets_clock(conn):
+    sid, _ = ops.add_from_form(conn, {"url": "http://a.com", "recrawl_hours": "2"})
+    sid2, _ = ops.add_from_form(conn, {"url": "http://b.com"})
+    conn.execute("UPDATE seeds SET added_at = '2026-11-01T00:00:00Z' WHERE id = ?", (sid,))
+    conn.commit()
+    rows = ops.list_seeds(conn)
+    assert rows[0]["next_recrawl"] == "2026-11-01T02:00:00Z"
+    assert rows[1]["next_recrawl"] is None
+    ops.recrawl(conn, sid)
+    seed = ops.get_seed(conn, sid)
+    assert seed["last_crawled"] is not None and seed["last_crawled"] > "2026-11-01T00:00:00Z"
+    assert ops.list_seeds(conn)[0]["next_recrawl"] > "2026-11-01T02:00:00Z"

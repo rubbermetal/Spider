@@ -156,3 +156,13 @@ def test_nav_has_seeds_link(client):
     response = client.get("/")
     assert response.status_code == 200
     assert 'href="/seeds"' in response.get_data(as_text=True)
+
+
+def test_seeds_page_shows_next_recrawl(client, admin_db):
+    add(client, "http://a.com", recrawl_hours="2")
+    conn = conn_of(admin_db)
+    conn.execute("UPDATE seeds SET added_at = '2026-11-01T00:00:00Z'")
+    conn.commit()
+    body = client.get("/seeds").get_data(as_text=True)
+    assert "Next recrawl" in body
+    assert "2026-11-01T02:00:00Z" in body

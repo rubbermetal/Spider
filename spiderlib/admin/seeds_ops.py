@@ -1,6 +1,6 @@
 """Database actions behind the seeds admin page: list, add, edit, enable/disable, recrawl, delete."""
 
-from spiderlib import db, queue
+from spiderlib import db, queue, schedule
 from spiderlib.urls import normalize_url
 from spiderlib.admin import seeds_form
 
@@ -22,7 +22,10 @@ def list_seeds(conn):
     ORDER BY seeds.id
     """
     cursor = conn.execute(query)
-    return [dict(row) for row in cursor]
+    seeds = [dict(row) for row in cursor]
+    for seed in seeds:
+        seed["next_recrawl"] = schedule.next_due(seed)
+    return seeds
 
 def add_from_form(conn, form):
     """Add a new seed from a form."""
@@ -99,6 +102,7 @@ def recrawl(conn, seed_id):
         (seed_id,)
     )
     n = cursor.rowcount
+    conn.execute("UPDATE seeds SET last_crawled = ? WHERE id = ?", (db.now(), seed_id))  # restart the schedule clock
     conn.commit()
     db.audit(conn, "admin", "seed_recrawl", f"{seed['url']}: requeued {n}")
     return n

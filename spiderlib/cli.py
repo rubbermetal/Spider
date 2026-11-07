@@ -51,7 +51,7 @@ import sys
 from spiderlib import db, queue, crawler
 from spiderlib.crawler import Crawler
 from spiderlib.urls import host_of
-from spiderlib import serve
+from spiderlib import serve, schedule_cmd
 
 def build_parser():
     parser = argparse.ArgumentParser(description="Spider command-line interface.")
@@ -112,6 +112,7 @@ def build_parser():
     export_parser.add_argument('--out', help='Output file')
 
     serve.add_arguments(subparsers)
+    schedule_cmd.add_arguments(subparsers)
 
     return parser
 
@@ -294,6 +295,8 @@ def main(argv=None):
             return cmd_export(conn, args)
         elif args.command == 'serve':
             return serve.cmd_serve(conn, args)
+        elif args.command == 'schedule':
+            return schedule_cmd.cmd_schedule(conn, args)
     finally:
         conn.close()
 

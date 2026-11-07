@@ -1,6 +1,6 @@
 """Dashboard page, JSON stats endpoint and crawl control buttons."""
 
-from flask import Blueprint, current_app, jsonify, redirect, render_template, url_for
+from flask import Blueprint, current_app, jsonify, redirect, render_template, request, url_for
 from spiderlib import db, crawler
 from spiderlib.admin.dbconn import get_conn
 from datetime import datetime, timedelta, timezone
@@ -39,8 +39,9 @@ def stats():
 def control(action):
     conn = get_conn()
     if action == "start":
-        ok = runner().start(current_app.config["DB_PATH"])
-        detail = "started" if ok else "already running"
+        forever = request.form.get("forever") == "yes"
+        ok = runner().start(current_app.config["DB_PATH"], exit_when_idle=not forever)
+        detail = ("started (keep running)" if forever else "started") if ok else "already running"
     elif action == "pause":
         crawler.pause(conn)
         detail = ""
