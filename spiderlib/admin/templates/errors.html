@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Errors{% endblock %}
+{% block content %}
+    <h1>Errors</h1>
+    <p class="muted">{{ total }} URL(s) failed, were blocked or were skipped.</p>
+    {% if groups %}
+        <table class="grid">
+            <thead>
+                <tr>
+                    <th>Kind</th>
+                    <th>URLs</th>
+                    <th>Hosts</th>
+                    <th>Example</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for g in groups %}
+                    <tr>
+                        <td><a href="{{ url_for('errors.group', kind=g.kind) }}">{{ g.label }}</a></td>
+                        <td class="{% if g.kind.startswith('http-5') or g.kind in ['timeout', 'connection', 'dns', 'ssl'] %}bad{% endif %}">{{ g.count }}</td>
+                        <td>{{ g.hosts }}</td>
+                        <td>{{ (g.sample or '')|truncate(60, true) }}</td>
+                        <td>
+                            <form method="post" action="{{ url_for('errors.retry_all', kind=g.kind) }}" class="inline">
+                                <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+                                <button type="submit">Retry all</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="muted">No problems.</p>
+    {% endif %}
+    <h2>Hosts with the most problems</h2>
+    {% if hosts %}
+        <table class="grid">
+            <thead>
+                <tr>
+                    <th>Host</th>
+                    <th>URLs</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for h in hosts %}
+                    <tr>
+                        <td><a href="{{ url_for('domains.detail', host=h.host) }}">{{ h.host }}</a></td>
+                        <td>{{ h.count }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="muted">None.</p>
+    {% endif %}
+{% endblock %}

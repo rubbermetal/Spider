@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}{{ label }}{% endblock %}
+{% block content %}
+    <p><a href="{{ url_for('errors.index') }}">&larr; All errors</a></p>
+    <h1>{{ label }}</h1>
+    <p class="muted">{{ pg.total }} URL(s){% if pg.total %}, showing {{ pg.first }}-{{ pg.last }}{% endif %}</p>
+
+    {% if not rows %}
+        <p class="muted">Nothing here.</p>
+    {% else %}
+        <form method="post" action="{{ url_for('errors.retry_all', kind=kind) }}" class="inline">
+            <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+            <button type="submit">Retry all {{ pg.total }}</button>
+        </form>
+        <form id="retry" method="post" action="{{ url_for('errors.retry_selected') }}">
+            <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+            <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+            <button type="submit">Retry selected</button>
+        </form>
+        <table class="grid">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" data-select-all></th>
+                    <th>ID</th>
+                    <th>URL</th>
+                    <th>Host</th>
+                    <th>HTTP</th>
+                    <th>Error</th>
+                    <th>Attempts</th>
+                    <th>Fetched</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rows %}
+                <tr>
+                    <td><input type="checkbox" name="ids" value="{{ r.id }}" form="retry"></td>
+                    <td><a href="{{ url_for('urls.detail', url_id=r.id) }}">{{ r.id }}</a></td>
+                    <td>{{ r.url|truncate(60, true) }}</td>
+                    <td><a href="{{ url_for('domains.detail', host=r.host) }}">{{ r.host }}</a></td>
+                    <td>{{ r.http_status or '' }}</td>
+                    <td>{{ (r.error or '')|truncate(50, true) }}</td>
+                    <td>{{ r.attempts }}</td>
+                    <td>{{ r.fetched_at or '' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
+    <nav class="pager">
+        {% if pg.has_prev %}
+            <a href="{{ url_for('errors.group', kind=kind, page=pg.page - 1) }}">Prev</a>
+        {% endif %}
+        <span>Page {{ pg.page }} of {{ pg.pages }}</span>
+        {% if pg.has_next %}
+            <a href="{{ url_for('errors.group', kind=kind, page=pg.page + 1) }}">Next</a>
+        {% endif %}
+    </nav>
+{% endblock %}
