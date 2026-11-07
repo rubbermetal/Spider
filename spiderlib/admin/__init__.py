@@ -18,9 +18,10 @@ def create_app(db_path, password=None, secret_key=None, trust_proxy=False, runne
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
     from spiderlib.admin import auth, dashboard, dbconn, domains, errors, export, logs, seeds, settings, urls
-    from spiderlib.admin.runner import Runner
+    from spiderlib.admin.runner import Runner, reset_stale_state
 
     app.extensions["spider_runner"] = runner if runner is not None else Runner()
+    reset_stale_state(db_path, app.extensions["spider_runner"])
     app.teardown_appcontext(dbconn.close_conn)
     app.before_request(auth.guard)
     app.context_processor(lambda: {"csrf_token": auth.csrf_token})

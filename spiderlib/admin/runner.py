@@ -1,7 +1,28 @@
 """Starts and tracks the crawler thread inside the admin process."""
 
 import threading
+from spiderlib import db
 from spiderlib.crawler import Crawler
+
+
+def reset_stale_state(db_path, runner) -> bool:
+    """Set a leftover 'running'/'paused' crawl_state back to 'stopped' when no crawler is running.
+
+    The crawler is a thread inside the admin process, so after a restart nothing is
+    crawling even though the database still says so. Returns True when it reset the state.
+    """
+    if runner.is_running():
+        return False
+    conn = db.connect(db_path)
+    try:
+        state = db.get_settings(conn)["crawl_state"]
+        if state not in ("running", "paused"):
+            return False
+        db.set_setting(conn, "crawl_state", "stopped")
+        db.log_event(conn, "info", f"crawl state reset to stopped at startup (was {state}; no crawler was running)")
+        return True
+    finally:
+        conn.close()
 
 class Runner:
     def __init__(self, factory=Crawler):
