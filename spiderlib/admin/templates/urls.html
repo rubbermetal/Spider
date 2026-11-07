@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}URLs{% endblock %}
+{% block content %}
+    <h1>URLs</h1>
+    <p class="muted">{{ pg.total }} URL(s){% if pg.total %}, showing {{ pg.first }}-{{ pg.last }}{% endif %}</p>
+
+    <form method="get" action="{{ url_for('urls.index') }}" class="filters">
+        <input type="text" name="q" value="{{ f.q }}" placeholder="search url, title, description">
+        <select name="status">
+            <option value="" {% if f.status == "" %}selected{% endif %}>Any status</option>
+            {% for s in statuses %}
+                <option value="{{ s }}" {% if f.status == s %}selected{% endif %}>{{ s }} ({{ counts.get(s, 0) }})</option>
+            {% endfor %}
+        </select>
+        <input type="text" name="host" value="{{ f.host }}" placeholder="host">
+        <input type="text" name="tag" value="{{ f.tag }}" placeholder="tag">
+        <select name="seed">
+            <option value="" {% if f.seed == "" %}selected{% endif %}>Any seed</option>
+            {% for id, url in seeds %}
+                <option value="{{ id }}" {% if f.seed == id %}selected{% endif %}>{{ url }}</option>
+            {% endfor %}
+        </select>
+        <select name="hidden">
+            <option value="" {% if f.hidden == "" %}selected{% endif %}>Hidden: any</option>
+            <option value="no" {% if f.hidden == "no" %}selected{% endif %}>Not hidden</option>
+            <option value="yes" {% if f.hidden == "yes" %}selected{% endif %}>Hidden</option>
+        </select>
+        <select name="approved">
+            <option value="" {% if f.approved == "" %}selected{% endif %}>Approved: any</option>
+            <option value="yes" {% if f.approved == "yes" %}selected{% endif %}>Approved</option>
+            <option value="no" {% if f.approved == "no" %}selected{% endif %}>Not approved</option>
+        </select>
+        <select name="sort">
+            {% for sort in sorts %}
+                <option value="{{ sort }}" {% if f.sort == sort %}selected{% endif %}>{{ sort }}</option>
+            {% endfor %}
+        </select>
+        <select name="order">
+            <option value="desc" {% if f.order == "desc" %}selected{% endif %}>Newest first</option>
+            <option value="asc" {% if f.order == "asc" %}selected{% endif %}>Oldest first</option>
+        </select>
+        <select name="per_page">
+            {% for choice in per_page_choices %}
+                <option value="{{ choice }}" {% if f.per_page == choice %}selected{% endif %}>{{ choice }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Apply</button>
+        <a class="btn" href="{{ url_for('urls.index') }}">Reset</a>
+    </form>
+
+    {% if not rows %}
+        <p class="muted">No URLs match.</p>
+    {% else %}
+        <form id="bulk" method="post" action="{{ url_for('urls.bulk') }}">
+            <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+            <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+            <div class="bulk-bar">
+                <select name="action">
+                    {% for action in actions %}
+                        <option value="{{ action }}">{{ action.replace('_', ' ') }}</option>
+                    {% endfor %}
+                </select>
+                <input type="text" name="value" placeholder="tag (for tag actions)" size="14">
+                <label><input type="checkbox" name="confirm" value="yes"> confirm (needed for delete)</label>
+                <button type="submit">Apply to selected</button>
+            </div>
+            <table class="grid">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" data-select-all></th>
+                        <th>ID</th>
+                        <th>URL</th>
+                        <th>Status</th>
+                        <th>HTTP</th>
+                        <th>Depth</th>
+                        <th>Title</th>
+                        <th>Fetched</th>
+                        <th>Flags</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in rows %}
+                        <tr>
+                            <td><input type="checkbox" name="ids" value="{{ r.id }}" form="bulk"></td>
+                            <td>{{ r.id }}</td>
+                            <td><a href="{{ url_for('urls.detail', url_id=r.id) }}">{{ r.url|truncate(70, true) }}</a></td>
+                            <td class="st {{ r.status }}">{{ r.status }}</td>
+                            <td>{{ r.http_status or '' }}</td>
+                            <td>{{ r.depth }}</td>
+                            <td>{{ (r.title or '')|truncate(40, true) }}</td>
+                            <td>{{ r.fetched_at or '' }}</td>
+                            <td>
+                                {% if r.hidden %}<span class="warn">hidden</span>{% endif %}
+                                {% if r.approved %}<span class="ok">approved</span>{% endif %}
+                                {% for t in r.tags.split(',') if t %}
+                                    <span class="tag">{{ t }}</span>
+                                {% endfor %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </form>
+    {% endif %}
+
+    <nav class="pager">
+        {% if pg.has_prev %}
+            <a href="{{ url_for('urls.index', **dict(qs, page=pg.page - 1)) }}">Prev</a>
+        {% endif %}
+        <span>Page {{ pg.page }} of {{ pg.pages }}</span>
+        {% if pg.has_next %}
+            <a href="{{ url_for('urls.index', **dict(qs, page=pg.page + 1)) }}">Next</a>
+        {% endif %}
+    </nav>
+{% endblock %}

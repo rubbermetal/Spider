@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}URL {{ u.id }}{% endblock %}
+{% block content %}
+    <p><a href="{{ url_for('urls.index') }}">&larr; All URLs</a></p>
+    <h1>URL {{ u.id }}</h1>
+    <p><a href="{{ u.url }}" rel="noopener">{{ u.url }}</a></p>
+    {% if u.error %}
+        <p class="msg bad">{{ u.error }}</p>
+    {% endif %}
+    <table class="grid">
+        <tr><th>Status</th><td>{{ u.status if u.status is not none and u.status != '' else '-' }}</td></tr>
+        <tr><th>HTTP status</th><td>{{ u.http_status if u.http_status is not none and u.http_status != '' else '-' }}</td></tr>
+        <tr><th>Content type</th><td>{{ u.content_type if u.content_type is not none and u.content_type != '' else '-' }}</td></tr>
+        <tr><th>Title</th><td>{{ u.title if u.title is not none and u.title != '' else '-' }}</td></tr>
+        <tr><th>Description</th><td>{{ u.description if u.description is not none and u.description != '' else '-' }}</td></tr>
+        <tr><th>Size (bytes)</th><td>{{ u.bytes if u.bytes is not none and u.bytes != '' else '-' }}</td></tr>
+        <tr><th>Fetch time (ms)</th><td>{{ u.fetch_ms if u.fetch_ms is not none and u.fetch_ms != '' else '-' }}</td></tr>
+        <tr><th>Fetched at</th><td>{{ u.fetched_at if u.fetched_at is not none and u.fetched_at != '' else '-' }}</td></tr>
+        <tr><th>Added at</th><td>{{ u.added_at if u.added_at is not none and u.added_at != '' else '-' }}</td></tr>
+        <tr><th>Depth</th><td>{{ u.depth if u.depth is not none and u.depth != '' else '-' }}</td></tr>
+        <tr><th>Priority</th><td>{{ u.priority if u.priority is not none and u.priority != '' else '-' }}</td></tr>
+        <tr><th>Attempts</th><td>{{ u.attempts if u.attempts is not none and u.attempts != '' else '-' }}</td></tr>
+        <tr><th>Next attempt</th><td>{{ u.next_attempt_at if u.next_attempt_at is not none and u.next_attempt_at != '' else '-' }}</td></tr>
+        <tr><th>Seed</th><td>{% if u.seed_id %}<a href="{{ url_for('seeds.edit', seed_id=u.seed_id) }}">{{ u.seed_url }}</a>{% else %}-{% endif %}</td></tr>
+        <tr><th>Discovered from</th><td>{% if u.discovered_from %}<a href="{{ url_for('urls.detail', url_id=u.discovered_from) }}">{{ u.discovered_from }}</a>{% else %}-{% endif %}</td></tr>
+        <tr><th>Content hash</th><td>{{ u.content_hash if u.content_hash is not none and u.content_hash != '' else '-' }}</td></tr>
+        <tr><th>Hidden</th><td>{% if u.hidden %}yes{% else %}no{% endif %}</td></tr>
+        <tr><th>Approved</th><td>{% if u.approved %}yes{% else %}no{% endif %}</td></tr>
+        <tr><th>Tags</th><td>{% for tag in u.tags.split(',') if tag %}<span class="tag">{{ tag }}</span>{% endfor %}</td></tr>
+    </table>
+    <h2>Actions</h2>
+    <form method="post" action="{{ url_for('urls.single', url_id=u.id) }}" class="settings">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <select name="action">
+            {% for action in actions %}<option value="{{ action }}">{{ action.replace('_', ' ') }}</option>{% endfor %}
+        </select>
+        <input type="text" name="value" placeholder="tag (for tag actions)">
+        <label><input type="checkbox" name="confirm" value="yes"> confirm (needed for delete)</label>
+        <button type="submit">Apply</button>
+    </form>
+    <h2>Linked from ({{ inbound|length }})</h2>
+    {% if inbound|length == 0 %}
+        <p class="muted">None.</p>
+    {% else %}
+        <ul>
+            {% for l in inbound %}
+                <li><a href="{{ url_for('urls.detail', url_id=l.id) }}">{{ l.url|truncate(80, true) }}</a></li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    <h2>Links on this page ({{ outbound|length }})</h2>
+    {% if outbound|length == 0 %}
+        <p class="muted">None.</p>
+    {% else %}
+        <ul>
+            {% for l in outbound %}
+                <li>
+                    {% if l.id %}
+                        <a href="{{ url_for('urls.detail', url_id=l.id) }}">{{ l.to_url|truncate(80, true) }}</a>
+                        <span class="muted">{{ l.status }}</span>
+                    {% else %}
+                        {{ l.to_url|truncate(80, true) }}
+                        <span class="muted">not queued</span>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endblock %}

@@ -33,3 +33,11 @@
     const interval = setInterval(poll, 3000);
     poll();
 })();
+
+(function() {
+    var all = document.querySelector('[data-select-all]');
+    if (!all) return;
+    all.addEventListener('change', function() {
+        document.querySelectorAll('input[name="ids"]').forEach(function(box) { box.checked = all.checked; });
+    });
+})();
