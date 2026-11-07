@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Audit log{% endblock %}
+{% block content %}
+    <h1>Audit log</h1>
+    <p class="muted">{{ pg.total }} entr{{ 'y' if pg.total == 1 else 'ies' }}{% if pg.total %}, showing {{ pg.first }}-{{ pg.last }}{% endif %}. <a href="{{ url_for('logs.index') }}">Event log</a></p>
+
+    <form method="get" action="{{ url_for('logs.audit') }}" class="filters">
+        <input type="text" name="q" value="{{ f.q }}" placeholder="search action or detail">
+        <select name="actor">
+            <option value="" {% if f.actor == '' %}selected{% endif %}>Any actor</option>
+            {% for actor in options.actors %}
+                <option value="{{ actor }}" {% if f.actor == actor %}selected{% endif %}>{{ actor }}</option>
+            {% endfor %}
+        </select>
+        <select name="action">
+            <option value="" {% if f.action == '' %}selected{% endif %}>Any action</option>
+            {% for action in options.actions %}
+                <option value="{{ action }}" {% if f.action == action %}selected{% endif %}>{{ action }}</option>
+            {% endfor %}
+        </select>
+        <select name="per_page">
+            {% for choice in per_page_choices %}
+                <option value="{{ choice }}" {% if f.per_page == choice %}selected{% endif %}>{{ choice }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Apply</button>
+        <a class="btn" href="{{ url_for('logs.audit') }}">Reset</a>
+    </form>
+
+    {% if not rows %}
+        <p class="muted">No audit entries.</p>
+    {% else %}
+        <table class="grid">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Actor</th>
+                    <th>Action</th>
+                    <th>Detail</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    <tr>
+                        <td>{{ row.ts }}</td>
+                        <td>{{ row.actor }}</td>
+                        <td>{{ row.action }}</td>
+                        <td>{{ row.detail }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <nav class="pagination">
+            {% if pg.has_prev %}
+                <a href="{{ url_for('logs.audit', **dict(qs, page=pg.page - 1)) }}">Previous</a>
+            {% endif %}
+            {% for page in range(1, pg.pages + 1) %}
+                <a href="{{ url_for('logs.audit', **dict(qs, page=page)) }}" {% if pg.page == page %}class="active"{% endif %}>{{ page }}</a>
+            {% endfor %}
+            {% if pg.has_next %}
+                <a href="{{ url_for('logs.audit', **dict(qs, page=pg.page + 1)) }}">Next</a>
+            {% endif %}
+        </nav>
+    {% endif %}
+{% endblock %}

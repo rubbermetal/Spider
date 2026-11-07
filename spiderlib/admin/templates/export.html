@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Export{% endblock %}
+{% block content %}
+<h1>Export</h1>
+{% if error %}<p class="msg bad">{{ error }}</p>{% endif %}
+<p class="muted">{{ count }} URL(s) match these options.</p>
+<form method="get" action="{{ url_for('export.index') }}" class="settings">
+    <div class="field">
+        <label>Format</label>
+        <select name="format">
+            <option value="csv" {% if opts.format == 'csv' %}selected{% endif %}>CSV</option>
+            <option value="json" {% if opts.format == 'json' %}selected{% endif %}>JSON</option>
+        </select>
+    </div>
+    <div class="field">
+        <label>Status</label>
+        <select name="status">
+            <option value="" {% if opts.status == '' %}selected{% endif %}>Any status</option>
+            {% for status in statuses %}
+            <option value="{{ status }}" {% if opts.status == status %}selected{% endif %}>{{ status }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="field">
+        <label>Hidden pages</label>
+        <select name="hidden">
+            <option value="exclude" {% if opts.hidden == 'exclude' %}selected{% endif %}>Exclude hidden</option>
+            <option value="include" {% if opts.hidden == 'include' %}selected{% endif %}>Include hidden</option>
+        </select>
+    </div>
+    <div class="field">
+        <label>Approved</label>
+        <select name="approved">
+            <option value="any" {% if opts.approved == 'any' %}selected{% endif %}>Any</option>
+            <option value="only" {% if opts.approved == 'only' %}selected{% endif %}>Approved only</option>
+        </select>
+    </div>
+    <button type="submit">Update count</button>
+    <button type="submit" formaction="{{ url_for('export.download') }}">Download</button>
+</form>
+<p class="muted">Tip: choose "Approved only" and "Exclude hidden" for the list a directory site should publish.</p>
+{% endblock %}

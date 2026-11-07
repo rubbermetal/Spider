@@ -9,7 +9,7 @@
 <body>
     <header class="topbar">
         <a class="brand" href="{{ url_for('dashboard.index') }}">Spider</a>
-        {% set nav = [('dashboard.index', 'Dashboard'), ('urls.index', 'URLs'), ('seeds.index', 'Seeds'), ('domains.index', 'Domains'), ('errors.index', 'Errors'), ('settings.edit', 'Settings')] %}
+        {% set nav = [('dashboard.index', 'Dashboard'), ('urls.index', 'URLs'), ('seeds.index', 'Seeds'), ('domains.index', 'Domains'), ('errors.index', 'Errors'), ('logs.index', 'Logs'), ('logs.audit', 'Audit'), ('export.index', 'Export'), ('settings.edit', 'Settings')] %}
         <nav>
             {% for ep, label in nav %}<a href="{{ url_for(ep) }}"{% if request.endpoint == ep %} class="active"{% endif %}>{{ label }}</a>{% endfor %}
         </nav>
